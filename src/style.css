@@ -6,7 +6,7 @@
 
 @layer base {
   body {
-    @apply m-0 min-w-80 bg-slate-50 font-sans text-slate-900 antialiased;
+    @apply m-0 min-w-80 bg-slate-100 font-sans text-slate-900 antialiased;
   }
   button,
   input,
@@ -24,16 +24,47 @@
 
 @layer components {
   .panel {
-    @apply min-w-0 rounded-lg border border-slate-200 bg-white;
+    @apply min-w-0 rounded-xl border border-slate-200 bg-white;
+  }
+  /* The crisis banner is the one deliberately dark surface: it carries the visual weight. */
+  .panel-crisis {
+    @apply min-w-0 overflow-hidden rounded-xl border border-slate-800 bg-slate-900 text-white;
   }
   .section-title {
     @apply text-base font-semibold text-slate-900;
+  }
+  .section-eyebrow {
+    @apply text-[11px] font-semibold tracking-widest text-slate-500 uppercase;
   }
   .btn-primary {
     @apply inline-flex min-h-10 cursor-pointer items-center justify-center rounded-md border border-emerald-800 bg-emerald-800 px-4 py-2.5 text-sm font-medium text-white hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-secondary {
     @apply inline-flex min-h-10 cursor-pointer items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-ghost {
+    @apply inline-flex min-h-8 cursor-pointer items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100;
+  }
+  .btn-risky {
+    @apply inline-flex min-h-10 cursor-pointer items-center justify-center rounded-md border border-red-700 bg-red-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[11px] leading-4 font-medium whitespace-nowrap;
+  }
+  .pip {
+    @apply size-3.5 rounded-full border-2;
+  }
+  .dot {
+    @apply size-2 rounded-full border;
+  }
+  .meter {
+    @apply h-1.5 w-full overflow-hidden rounded-full bg-slate-200;
+  }
+  .meter-fill {
+    @apply h-full rounded-full transition-all duration-300;
+  }
+  .trait-card {
+    @apply flex min-w-0 flex-col overflow-hidden rounded-xl border bg-white transition;
   }
   .stat-label {
     @apply text-xs text-slate-500;
