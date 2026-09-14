@@ -1,74 +1,28 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { effectContextFor } from '../game/analysis'
+import { computed, ref } from 'vue'
 import { content } from '../game/content'
+import { categoryLabels } from '../game/presentation'
+import { countTraits, type LibraryZone } from '../game/ui'
 import type { RunState } from '../game/types'
-import TraitCard from './board/TraitCard.vue'
-
-const props = defineProps<{ state: RunState }>()
-
-const genes = computed(() =>
-  Object.values(content.traits)
-    .map((trait) => ({
-      trait,
-      count: props.state.cards.filter((card) => card.traitId === trait.id).length,
-    }))
-    .filter((entry) => entry.count > 0),
-)
-const context = computed(() => effectContextFor(props.state, content))
-/** Everything the lineage has met so far: owned, fixed, or ever expressed. */
-const discovered = computed(
-  () =>
-    new Set([
-      ...props.state.cards.map((card) => card.traitId),
-      ...props.state.permanentTraits.map((entry) => entry.traitId),
-      ...Object.keys(props.state.expressionCounts),
-    ]).size,
-)
-const total = Object.keys(content.traits).length
+import TraitCard from './TraitCard.vue'
+import GameIcon from './GameIcon.vue'
+const props = withDefaults(defineProps<{ state: RunState | null; initialZone?: LibraryZone }>(), { initialZone: 'owned' })
+defineEmits<{ inspect: [traitId: string] }>()
+const zone = ref<LibraryZone>(props.initialZone)
+const search = ref('')
+const category = ref('')
+const counts = computed(() => countTraits(props.state, zone.value))
+const entries = computed(() => Object.values(content.traits).filter(trait =>
+  (zone.value === 'all' || counts.value[trait.id]) && (!category.value || trait.category === category.value) && trait.name.includes(search.value.trim()),
+).sort((a, b) => a.name.localeCompare(b.name, 'zh-CN')))
+const zones: { id: LibraryZone; label: string }[] = [{ id: 'owned', label: '基因库' }, { id: 'hand', label: '手牌' }, { id: 'draw', label: '抽牌' }, { id: 'discard', label: '弃牌' }, { id: 'all', label: '图鉴' }]
 </script>
-
 <template>
-  <section aria-label="基因库">
-    <p class="text-xs leading-relaxed text-ink-muted">
-      相同性状的卡牌共享固化进度，每代最多累计一次。固化时会移除全部同名牌。
-    </p>
-    <dl class="mt-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
-      <div class="rounded-lg border border-frame-line bg-black/20 py-2.5">
-        <dt class="text-[11px] text-ink-dim">拥有的牌</dt>
-        <dd class="text-xl font-semibold tabular-nums text-ink">{{ state.cards.length }}</dd>
-      </div>
-      <div class="rounded-lg border border-frame-line bg-black/20 py-2.5">
-        <dt class="text-[11px] text-ink-dim">发现性状</dt>
-        <dd class="text-xl font-semibold tabular-nums text-ink">{{ discovered }}</dd>
-      </div>
-      <div class="rounded-lg border border-violet-400/40 bg-violet-400/10 py-2.5">
-        <dt class="text-[11px] text-violet-200">永久性状</dt>
-        <dd class="text-xl font-semibold tabular-nums text-violet-100">
-          {{ state.permanentTraits.length }}
-        </dd>
-      </div>
-      <div class="rounded-lg border border-frame-line bg-black/20 py-2.5">
-        <dt class="text-[11px] text-ink-dim">尚未发现</dt>
-        <dd class="text-xl font-semibold tabular-nums text-ink">{{ total - discovered }}</dd>
-      </div>
-    </dl>
-    <div class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      <div v-for="entry in genes" :key="entry.trait.id" class="flex flex-col">
-        <p class="mb-1 text-[11px] text-ink-dim">
-          {{ entry.count }} 张 · 已表达 {{ state.expressionCounts[entry.trait.id] ?? 0 }} 代
-        </p>
-        <TraitCard
-          class="flex-1"
-          :trait="entry.trait"
-          :context="context"
-          size="grid"
-          detail="fold"
-          :progress="state.expressionCounts[entry.trait.id] ?? 0"
-          :threshold="content.rules.fixationThreshold"
-        />
-      </div>
-    </div>
-    <p v-if="!genes.length" class="mt-3 text-xs text-ink-dim">基因库暂时为空。</p>
+  <section class="gene-bank" aria-label="牌库与图鉴">
+    <div class="segmented-control" aria-label="牌区筛选"><button v-for="tab in zones" :key="tab.id" type="button" :aria-pressed="zone === tab.id" @click="zone = tab.id">{{ tab.label }}</button></div>
+    <div class="library-filters"><label class="search-input"><GameIcon name="search" :size="17" /><input v-model="search" type="search" placeholder="查找性状" aria-label="查找性状" /></label><select v-model="category" aria-label="性状分类"><option value="">全部分类</option><option v-for="(label, key) in categoryLabels" :key="key" :value="key">{{ label }}</option></select></div>
+    <p class="fine-print library-count">{{ entries.length }} 种性状 <span v-if="zone !== 'all'">· {{ Object.values(counts).reduce((sum, n) => sum + n, 0) }} 张牌</span><span v-if="zone === 'draw'"> · 仅展示构成，不表示抽取顺序</span></p>
+    <div class="library-grid"><div v-for="trait in entries" :key="trait.id"><div class="library-card-label"><span>{{ counts[trait.id] ? `持有 ×${counts[trait.id]}` : state?.permanentTraits.some(f => f.traitId === trait.id) ? '已固化' : '未持有' }}</span><span v-if="!trait.rewardPool">分支</span></div><TraitCard :trait="trait" variant="library" :progress="state?.expressionCounts[trait.id] ?? 0" @inspect="$emit('inspect', trait.id)" /></div></div>
+    <p v-if="!entries.length" class="empty-state">这里还没有符合条件的性状。</p>
   </section>
 </template>

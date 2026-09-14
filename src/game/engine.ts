@@ -51,18 +51,12 @@ function selectionError(
   state: RunState,
   selected: readonly string[],
   content: GameContent,
-  enforceBudget = true,
 ): string | null {
   if (new Set(selected).size !== selected.length) return '同一张牌不能重复选择。'
   if (selected.some((id) => !state.hand.includes(id))) return '只能表达当前手牌中的性状。'
-  if (enforceBudget && expressionCost(state, selected, content) > content.rules.expressionBudget)
+  if (expressionCost(state, selected, content) > content.rules.expressionBudget)
     return '表达额度不足，请先取消其他卡牌。'
   return null
-}
-
-export interface PreviewOptions {
-  /** The UI predicts "what if" boards (single-card impact), which may exceed the budget. */
-  enforceBudget?: boolean
 }
 
 /** Cap extinction losses at the available population, apportioned by pressure. */
@@ -86,10 +80,9 @@ export function previewGeneration(
   state: RunState,
   content: GameContent,
   selected: readonly string[] = state.selectedCardIds,
-  options: PreviewOptions = {},
 ): GenerationResult {
   if (state.phase !== 'adaptation') throw new Error('当前不在性状表达阶段。')
-  const error = selectionError(state, selected, content, options.enforceBudget !== false)
+  const error = selectionError(state, selected, content)
   if (error) throw new Error(error)
   const expressed = selected.map((id) => cardDefinition(state, id, content))
   const permanent = state.permanentTraits.map((fixed) => content.traits[fixed.traitId]!)

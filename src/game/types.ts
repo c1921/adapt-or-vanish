@@ -51,8 +51,6 @@ export interface EventDefinition {
   id: string
   name: string
   description: string
-  /** Authored prose used as the generation headline. Falls back to description. */
-  flavor?: string
   pressures?: Partial<Pressures>
   resources?: Partial<Resources>
 }

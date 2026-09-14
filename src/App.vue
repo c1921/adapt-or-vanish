@@ -1,196 +1,45 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useGame } from './composables/useGame'
 import { content } from './game/content'
 import { totalGenerations } from './game/engine'
-import RulesPanel from './components/RulesPanel.vue'
 import RunView from './components/RunView.vue'
-const { state, playing, actionError, notice, preview, fixable, start, dispatch, resume, home } =
-  useGame()
+import AppSheet from './components/AppSheet.vue'
+import GameIcon from './components/GameIcon.vue'
+import HelpPanel from './components/HelpPanel.vue'
+import GeneBank from './components/GeneBank.vue'
+import TraitDetails from './components/TraitDetails.vue'
+const { state, playing, actionError, notice, preview, fixable, start, dispatch, resume, home } = useGame()
 const seed = ref('')
-const confirmNew = ref(false)
-const total = totalGenerations(content)
-function requestStart() {
-  if (state.value && !confirmNew.value) {
-    confirmNew.value = true
-    return
-  }
-  start(seed.value.trim())
-  confirmNew.value = false
-}
-function goHome() {
-  confirmNew.value = false
-  home()
-}
+const sheet = ref<'new' | 'help' | 'library' | 'trait' | null>(null)
+const selectedTrait = ref('')
+const title = computed(() => sheet.value === 'new' ? '开始一条新的谱系' : sheet.value === 'help' ? '如何延续' : sheet.value === 'trait' ? content.traits[selectedTrait.value]!.name : '性状图鉴')
+function startRun() { start(seed.value.trim()); sheet.value = null }
+function continueRun() { sheet.value = null; resume() }
 </script>
-
 <template>
-  <!-- 对局时整屏交给棋盘（页面不滚动）；首页保持滚动菜单形态。 -->
-  <RunView
-    v-if="playing && state"
-    :state="state"
-    :preview="preview"
-    :fixable="fixable"
-    :error="actionError"
-    :notice="notice"
-    @action="dispatch"
-    @home="goHome"
-  />
-  <div v-else class="min-h-screen">
-    <header class="border-b border-slate-200 bg-white">
-      <div
-        class="mx-auto flex max-w-360 flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6"
-      >
-        <div class="flex items-center gap-3">
-          <span
-            aria-hidden="true"
-            class="flex size-9 items-center justify-center rounded-md bg-emerald-800 text-lg font-semibold text-white"
-            >A</span
-          >
-          <div>
-            <p class="text-sm font-semibold tracking-wide">适者延续</p>
-            <p class="text-[10px] tracking-widest text-slate-500">ADAPT OR VANISH</p>
-          </div>
-        </div>
-        <p class="text-xs text-slate-500">环境出题 · 性状作答 · 种群评分</p>
-      </div>
-    </header>
-    <main class="mx-auto max-w-360 px-4 py-5 sm:px-6">
-      <p
-        v-if="notice"
-        role="alert"
-        class="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"
-      >
-        {{ notice }}
-      </p>
-      <div class="mx-auto max-w-4xl py-6 sm:py-10">
-        <p class="text-sm font-medium text-emerald-800">
-          环境压力 → 生存选择 → 演化权衡 → 种群反馈
-        </p>
-        <h1
-          class="mt-3 text-3xl leading-tight font-semibold tracking-tight text-slate-900 sm:text-4xl"
-        >
-          环境不断改变，你的物种必须回答。
-        </h1>
-        <p class="mt-4 max-w-2xl text-base leading-relaxed text-slate-600">
-          每一代环境都会提出一个新的生存难题。你用手上的性状卡作答，种群数量告诉你答案。
-          反复表达的适应会成为永久特征，最终长成一个独一无二的物种。
-        </p>
-        <div class="mt-8 grid gap-5 md:grid-cols-2">
-          <section class="panel p-6">
-            <h2 class="section-title">开始一条谱系</h2>
-            <p class="mt-2 text-sm text-slate-500">
-              {{ content.ancestorName }} · 初始种群 {{ content.rules.initialPopulation }}
-            </p>
-            <form class="mt-6" @submit.prevent="requestStart">
-              <label for="seed" class="block text-sm font-medium text-slate-700"
-                >世界种子 <span class="font-normal text-slate-400">选填</span></label
-              ><input
-                id="seed"
-                v-model="seed"
-                name="seed"
-                maxlength="80"
-                autocomplete="off"
-                class="mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
-                placeholder="留空随机生成"
-              />
-              <p class="mt-2 text-xs text-slate-500">相同种子与相同选择，会重现相同的演化过程。</p>
-              <div
-                v-if="confirmNew"
-                role="alert"
-                class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"
-              >
-                <p>开始新谱系会覆盖此浏览器中的现有记录。</p>
-                <button
-                  type="button"
-                  class="mt-2 underline underline-offset-4"
-                  @click="confirmNew = false"
-                >
-                  保留现有记录
-                </button>
-              </div>
-              <button class="btn-primary mt-5 w-full" type="submit">
-                {{ confirmNew ? '确认开始新谱系' : '开始新的谱系' }}
-              </button>
-            </form>
-            <div v-if="state" class="mt-4 border-t border-slate-100 pt-4">
-              <button class="btn-secondary w-full" type="button" @click="resume">
-                {{
-                  state.phase === 'ended' ? '查看上局记录' : `继续谱系 · 第 ${state.generation} 代`
-                }}
-              </button>
-              <p class="mt-2 break-all text-xs text-slate-500">
-                种子 {{ state.seed }} · 种群 {{ state.population }} ·
-                {{ state.permanentTraits.length }} 个永久性状
-              </p>
-            </div>
-          </section>
-          <section class="panel p-6">
-            <h2 class="section-title">一局是怎么进行的</h2>
-            <ol class="mt-5 space-y-5 text-sm">
-              <li class="flex gap-3">
-                <span class="step-number">1</span>
-                <div>
-                  <h3 class="font-medium">环境出题</h3>
-                  <p class="mt-1 leading-relaxed text-slate-500">
-                    顶部会告诉你这一代发生了什么、最大的威胁是什么，以及什么都不做会剩下多少个体。
-                  </p>
-                </div>
-              </li>
-              <li class="flex gap-3">
-                <span class="step-number">2</span>
-                <div>
-                  <h3 class="font-medium">性状作答</h3>
-                  <p class="mt-1 leading-relaxed text-slate-500">
-                    每代抽 {{ content.rules.handSize }} 张牌，用
-                    {{ content.rules.expressionBudget }}
-                    点额度表达性状。每张牌都标出它在当前环境下能多救活多少个体。
-                  </p>
-                </div>
-              </li>
-              <li class="flex gap-3">
-                <span class="step-number">3</span>
-                <div>
-                  <h3 class="font-medium">看预测再确认</h3>
-                  <p class="mt-1 leading-relaxed text-slate-500">
-                    悬停卡牌即可预览结果，生存预测会拆解成出生、食物、气候、捕食四项损失。满意后点「确认演化」。
-                  </p>
-                </div>
-              </li>
-              <li class="flex gap-3">
-                <span class="step-number">4</span>
-                <div>
-                  <h3 class="font-medium">留下适应</h3>
-                  <p class="mt-1 leading-relaxed text-slate-500">
-                    表达且存活累计
-                    {{ content.rules.fixationThreshold }} 次后，可把性状固化成物种身份的一部分。
-                  </p>
-                </div>
-              </li>
-            </ol>
-          </section>
-        </div>
-        <div class="mt-5 grid grid-cols-3 gap-3 text-center">
-          <div class="panel py-4">
-            <p class="stat-value">{{ total }}</p>
-            <p class="stat-label mt-1">世代挑战</p>
-          </div>
-          <div class="panel py-4">
-            <p class="stat-value">{{ Object.keys(content.traits).length }}</p>
-            <p class="stat-label mt-1">性状卡牌</p>
-          </div>
-          <div class="panel py-4">
-            <p class="stat-value">{{ content.rules.permanentLimit }}</p>
-            <p class="stat-label mt-1">永久性状槽位</p>
-          </div>
-        </div>
-        <p class="mt-5 text-xs leading-relaxed text-slate-500">
-          单局设计目标 15～25 分钟。进度自动保存在当前浏览器中，可随时离开后继续。
-        </p>
-      </div>
-      <div class="mx-auto mt-6 max-w-4xl">
-        <RulesPanel />
-      </div>
-    </main>
-  </div>
+  <RunView v-if="playing && state" :state="state" :preview="preview" :fixable="fixable" :error="actionError" :notice="notice" @action="dispatch" @home="home" />
+  <main v-else class="home-shell">
+    <header class="home-header"><span class="home-wordmark"><GameIcon name="sprout" :size="21" />适者延续</span><button class="icon-button" type="button" aria-label="玩法帮助" @click="sheet = 'help'"><GameIcon name="info" /></button></header>
+    <p v-if="notice" class="storage-notice" role="status">{{ notice }}</p>
+    <div class="home-content">
+      <section class="home-hero"><p class="eyebrow">演化 · 生存 · 卡牌构筑</p><h1>适应变化。<br /><span>延续生命。</span></h1><p class="home-english">ADAPT OR VANISH</p><p class="home-description">用一手性状，回应环境的选择。<br />让短暂的适应，成为物种的本能。</p></section>
+      <div class="home-card-composition" aria-hidden="true"><div class="home-display-card"><span class="display-cost">1</span><span class="display-card-name">灵活前肢</span><span class="display-card-type">形态</span><span class="display-card-line"></span></div><div class="home-display-card"><span class="display-cost">1</span><span class="display-card-name">体毛</span><span class="display-card-type">生理</span><span class="display-card-line"></span></div><div class="home-display-card"><span class="display-cost">1</span><span class="display-card-name">杂食</span><span class="display-card-type">食性</span><span class="display-card-line"></span></div></div>
+      <div class="home-journey"><span><i></i>森林</span><b></b><span><i></i>草原</span><b></b><span><i></i>干旱</span></div>
+      <section class="home-actions">
+        <template v-if="state"><button class="btn-primary full-width" type="button" @click="continueRun"><span>{{ state.phase === 'ended' ? '回看上局谱系' : '继续谱系' }}<small>第 {{ state.generation }} 代 · 种群 {{ state.population }}</small></span><GameIcon name="arrow" /></button><button class="btn-secondary full-width" type="button" @click="sheet = 'new'">开始新的谱系</button></template>
+        <button v-else class="btn-primary full-width" type="button" @click="sheet = 'new'">开始新的谱系<GameIcon name="arrow" /></button>
+        <button class="text-button full-width" type="button" @click="sheet = 'library'"><GameIcon name="cards" :size="16" />探索性状图鉴</button>
+      </section>
+      <div class="home-facts"><span><strong>{{ totalGenerations(content) }}</strong> 世代旅程</span><span><strong>{{ Object.keys(content.traits).length }}</strong> 种性状</span><span><strong>{{ content.rules.permanentLimit }}</strong> 个永久槽位</span></div>
+      <p class="home-footer">每一个选择，都留下痕迹。<span>进度自动保存于当前浏览器</span></p>
+    </div>
+    <AppSheet v-if="sheet" :title="title" eyebrow="一条谱系，无数种可能" :back="sheet === 'trait'" @close="sheet = null" @back="sheet = 'library'">
+      <form v-if="sheet === 'new'" id="new-run" class="new-run-form" @submit.prevent="startRun"><span class="new-run-symbol"><GameIcon name="sprout" :size="36" /></span><h3>{{ content.ancestorName }}</h3><p class="body-copy">从 {{ content.rules.initialPopulation }} 个体出发，穿过 {{ totalGenerations(content) }} 个世代。</p><details class="rule-details"><summary>高级选项 · 世界种子</summary><label for="seed">世界种子 <span class="muted">选填</span></label><input id="seed" v-model="seed" maxlength="80" autocomplete="off" placeholder="留空随机生成" /><p class="fine-print">相同种子与选择，会重现相同的演化过程。</p></details><p v-if="state" class="inline-warning">开始后会替换当前第 {{ state.generation }} 代的谱系与记录。若想保留，请关闭此面板并继续游戏。</p></form>
+      <HelpPanel v-else-if="sheet === 'help'" />
+      <KeepAlive><GeneBank v-if="sheet === 'library'" :state="state" initial-zone="all" @inspect="id => { selectedTrait = id; sheet = 'trait' }" /></KeepAlive>
+      <TraitDetails v-if="sheet === 'trait'" :trait="content.traits[selectedTrait]!" :progress="state?.expressionCounts[selectedTrait] ?? 0" />
+      <template v-if="sheet === 'new'" #footer><button class="btn-primary full-width" type="submit" form="new-run">{{ state ? '替换现有谱系并开始' : '让演化开始' }}<GameIcon name="arrow" /></button></template>
+    </AppSheet>
+  </main>
 </template>
