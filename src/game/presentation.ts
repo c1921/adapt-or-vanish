@@ -67,6 +67,36 @@ export const toneText: Record<Tone, string> = {
   cost: 'text-orange-700',
   neutral: 'text-slate-500',
 }
+/** The board is dark: every semantic tone has a tuned twin. */
+export const toneChipOnDark: Record<Tone, string> = {
+  growth: 'chip border-emerald-400/40 bg-emerald-400/15 text-emerald-100',
+  warmth: 'chip border-sky-400/40 bg-sky-400/15 text-sky-100',
+  danger: 'chip border-rose-400/40 bg-rose-400/15 text-rose-100',
+  gene: 'chip border-violet-400/40 bg-violet-400/15 text-violet-100',
+  cost: 'chip border-orange-400/40 bg-orange-400/15 text-orange-100',
+  neutral: 'chip border-white/15 bg-white/5 text-ink-muted',
+}
+export const toneTextOnDark: Record<Tone, string> = {
+  growth: 'text-emerald-300',
+  warmth: 'text-sky-300',
+  danger: 'text-rose-300',
+  gene: 'text-violet-300',
+  cost: 'text-orange-300',
+  neutral: 'text-ink-muted',
+}
+/** Dotted-underlined rule keywords carry their explanation as a tooltip. */
+export const keywords: Record<string, string> = {
+  固化: '连续表达同一性状并存活 5 代，即可固定为永久性状。',
+  表达额度: '每代可表达的性状总量；多数性状占 1 点，较大的性状占 2 点。',
+  食物压力: '环境造成的食物缺口，每 1 点造成 2 个个体损失并压低出生数。',
+  寒冷: '低温压力，缺乏御寒能力的个体会成批死亡。',
+  高温: '高温压力，缺乏散热能力的个体会成批死亡。',
+  捕食压力: '捕食者造成的损失，每 1 点造成 2 个个体损失。',
+  采集: '把本代可用资源转成本代食物，抵消食物压力；资源不跨代储存。',
+  永久性状: '固化后每代自动生效，收益与代价都不再需要抽牌。',
+  灭绝: '种群归零即终局，谱系终止。',
+}
+export const keywordTip = (term: string): string => keywords[term] ?? ''
 export const pressureTone: Record<PressureId, Tone> = {
   food: 'growth',
   temperature: 'warmth',

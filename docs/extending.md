@@ -14,11 +14,14 @@ reduceGame(state, action, content) // { state, error }
 
 状态保存卡牌实例、三个牌区、共享表达进度、永久性状、环境快照和随机流。界面只展示结果并派发 `GameAction`，不要在组件中计算第二套游戏规则。Zod 仅用于持久化边界，不进入规则层。
 
-展示层有三个模块，它们只做翻译，不做结算：
+展示层有四个模块，它们只做翻译，不做结算：
 
-- `presentation.ts`：图标、语义色、效果的正负号，以及把 `pressure/harvest/births` 翻译成"更耐寒 / 捕食风险降低 / 繁殖变慢"这类玩家语言。条件未满足时返回 `inactive`，界面据此显示"当前环境不生效"。
-- `analysis.ts`：全部派生数据。基线（什么都不表达）与当前方案的对比、单张牌多救活多少个体、威胁等级、演化时间线合并都在这里，数值一律来自 `previewGeneration`。单卡增量会以 `{ enforceBudget: false }` 试算超额牌，仅用于预测，不改变合法选择的校验。
+- `presentation.ts`：图标、语义色（浅色与深色两套）、效果的正负号，以及把 `pressure/harvest/births` 翻译成"更耐寒 / 捕食风险降低 / 繁殖变慢"这类玩家语言。条件未满足时返回 `inactive`，界面据此显示"当前环境不生效"。关键词表 `keywords` 供虚线下划线的术语提示使用。
+- `analysis.ts`：全部派生数据。基线（什么都不表达）与当前方案的对比、单张牌多救活多少个体、悬停卡牌时的幽灵预览（`previewForHover`）、威胁等级、演化时间线合并都在这里，数值一律来自 `previewGeneration`。单卡增量与幽灵预览会以 `{ enforceBudget: false }` 试算超额牌，仅用于预测，不改变合法选择的校验。
 - `species.ts`：永久性状到物种身份的映射（如 `burrow → 穴居`），并生成"一种小型、穴居、群体活动的食虫动物。"这样的描述。
+- `theme.ts`：五类性状的卡面配色（边框、插画底纹、名牌、选中环）与每种性状的卡面字形；`TraitCard` 暴露 `art` 插槽，将来替换成真实插画不需要改结构。
+
+对局界面是固定视口棋盘（`RunView` + `src/components/board/`）：`BoardHud` 常驻顶部，舞台区内部滚动，手牌区常驻底部，基因库／演化历史／规则／环境详情放进 `BoardDrawer`。手牌区用 roving tabindex 支持方向键，卡牌详情在 `CardDetail` 条中展开以获得完整宽度（避免在横向滚动容器里被裁切）。
 
 ## 添加普通卡牌
 
@@ -44,6 +47,7 @@ trait(
 - 温度条件支持 `cold/hot`；标签条件要求所有标签同时存在于本代已表达或永久性状中。
 - 新标签的中文显示名放在 `src/game/presentation.ts` 的 `tagLabels`，无需逐个改界面。
 - 在 `src/game/species.ts` 的 `descriptors` 中登记新性状（描述词与槽位），物种身份句子才能描述它；未登记的性状不会出现在描述里，但界面其余部分照常工作。
+- 在 `src/game/theme.ts` 的 `traitGlyphs` 中登记卡面字形（emoji），否则卡面回落到分类图标。
 - 更新 `content.version`，运行内容校验、规则与存档测试；新增内容数量变化时同步调整内容数量测试。
 
 ## 添加环境或突变
@@ -81,8 +85,8 @@ trait(
 
 ## 测试与调参
 
-`tests/helpers.ts` 中的两种策略会枚举五张可见手牌的合法组合，并偏好不同构筑。它们用于固定种子回归，不是玩家 AI 或自动获胜保证。`tests/analysis.test.ts` 固定展示层派生计算的数值，`tests/runview.test.ts` 用服务端渲染检查组件在各阶段都能渲染，并守住"3 秒看懂局势"所需的文案。
+`tests/helpers.ts` 中的两种策略会枚举五张可见手牌的合法组合，并偏好不同构筑。它们用于固定种子回归，不是玩家 AI 或自动获胜保证。`tests/analysis.test.ts` 固定展示层派生计算的数值（含悬停幽灵预览与真实预测一致），`tests/runview.test.ts` 用服务端渲染检查棋盘各阶段，`tests/board.test.ts` 覆盖卡面状态、手牌 roving tabindex、威胁意图、抽屉与抽屉内容。
 
-调整数值后运行 `npm test`，检查至少两种构筑、忽视压力导致灭绝、不同温度下的适应代价，以及完整单局逐步保存恢复。运行 `npm run build` 和 `npm run format:check` 后，在浏览器检查选择／取消、固化、突变、续玩及窄屏布局。
+调整数值后运行 `npm test`，检查至少两种构筑、忽视压力导致灭绝、不同温度下的适应代价，以及完整单局逐步保存恢复。运行 `npm run build` 和 `npm run format:check` 后，在浏览器检查悬停预览、选择／取消、固化、突变、续玩，以及窄屏（固定视口不出现整页滚动）与 `prefers-reduced-motion` 下的表现。
 
 首版独立于框架的规则层可继续承载地图或多物种系统；当前无需预先引入复杂事件总线、插件加载器或完整生态模拟。

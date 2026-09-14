@@ -34,11 +34,21 @@ describe('演化回合界面', () => {
     expect(html).toContain('预计下一代')
     expect(html).toContain('生存预测')
     expect(html).toContain('当前物种')
-    expect(html).toContain('当前环境')
+    // 环境详情现在是 HUD 抽屉入口，标题为「当前环境」。
+    expect(html).toContain('环境详情')
     expect(html).toContain('本代要表达的性状')
     expect(html).toContain('还能再表达 3 点')
     expect(html).toContain('确认演化')
     expect(html).toContain('不做新的适应')
+    // 棋盘结构：HUD、意图、手牌区、结算区。
+    expect(html).toContain('aria-label="生态旅程"')
+    expect(html).toContain('aria-label="本代威胁"')
+    expect(html).toContain('aria-label="手牌"')
+    expect(html).toContain('board-shell')
+    // HUD 抽屉入口
+    expect(html).toContain('基因库 · 10')
+    expect(html).toContain('演化历史')
+    expect(html).toContain('规则与计算说明')
     // Fixed trait language, not system language.
     expect(html).not.toContain('表达额度：0')
     expect(html).not.toContain('确认表达并结算')
@@ -47,7 +57,7 @@ describe('演化回合界面', () => {
   it('卡牌给出当前环境下的存活增量与固化进度', async () => {
     const state = createRun('ui-smoke', content)
     const html = await render(state)
-    expect(html).toMatch(/选择后预计多存活|对当前种群影响有限/)
+    expect(html).toMatch(/预计多存活|对种群影响有限/)
     expect(html).toContain('固化进度')
     expect(html).toContain('详细数值')
     expect(html).toContain('再表达')

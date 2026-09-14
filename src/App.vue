@@ -25,7 +25,18 @@ function goHome() {
 </script>
 
 <template>
-  <div class="min-h-screen">
+  <!-- 对局时整屏交给棋盘（页面不滚动）；首页保持滚动菜单形态。 -->
+  <RunView
+    v-if="playing && state"
+    :state="state"
+    :preview="preview"
+    :fixable="fixable"
+    :error="actionError"
+    :notice="notice"
+    @action="dispatch"
+    @home="goHome"
+  />
+  <div v-else class="min-h-screen">
     <header class="border-b border-slate-200 bg-white">
       <div
         class="mx-auto flex max-w-360 flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6"
@@ -52,17 +63,7 @@ function goHome() {
       >
         {{ notice }}
       </p>
-      <RunView
-        v-if="playing && state"
-        :state="state"
-        :preview="preview"
-        :fixable="fixable"
-        :error="actionError"
-        :notice="notice"
-        @action="dispatch"
-        @home="goHome"
-      />
-      <div v-else class="mx-auto max-w-4xl py-6 sm:py-10">
+      <div class="mx-auto max-w-4xl py-6 sm:py-10">
         <p class="text-sm font-medium text-emerald-800">
           环境压力 → 生存选择 → 演化权衡 → 种群反馈
         </p>
@@ -152,7 +153,7 @@ function goHome() {
                 <div>
                   <h3 class="font-medium">看预测再确认</h3>
                   <p class="mt-1 leading-relaxed text-slate-500">
-                    生存预测会随选择即时更新，并拆解成出生、食物、气候、捕食四项损失。满意后点「确认演化」。
+                    悬停卡牌即可预览结果，生存预测会拆解成出生、食物、气候、捕食四项损失。满意后点「确认演化」。
                   </p>
                 </div>
               </li>

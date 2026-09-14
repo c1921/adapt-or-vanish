@@ -7,17 +7,59 @@ import {
   evolutionTimeline,
   fixationStatus,
   forecastSummary,
+  previewForHover,
   probeTraitImpact,
   projectSelection,
   threatRows,
 } from '../src/game/analysis'
 import { content } from '../src/game/content'
-import { cardDefinition, expressionCost } from '../src/game/engine'
+import { cardDefinition, expressionCost, previewGeneration } from '../src/game/engine'
 import { effectChip } from '../src/game/presentation'
 import { speciesIdentity } from '../src/game/species'
 import { act, fixture, selectTraits } from './helpers'
 
 /** The fixture environment has food 6 / temperature 5 / predation 4 and no event. */
+describe('悬停预览', () => {
+  it('未选卡显示加入后的棋盘，已选卡显示移除后的棋盘', () => {
+    const { state, data } = fixture()
+    const current = projectSelection(state, data, [])!
+    const card = state.cards.find((entry) => entry.traitId === 'omnivore')!
+    const added = previewForHover(state, data, current, card.id)!
+    expect(added).toMatchObject({ mode: 'add', traitId: 'omnivore', delta: 15 })
+    expect(added.result.populationAfter).toBe(107)
+
+    const plan = selectTraits(state, ['omnivore', 'burrow'], data)
+    const planResult = projectSelection(plan, data, plan.selectedCardIds)!
+    const removed = previewForHover(plan, data, planResult, card.id)!
+    expect(removed.mode).toBe('remove')
+    expect(removed.result.populationAfter).toBe(101)
+    // 移除已选卡会失去它带来的收益，因此 delta 为负。
+    expect(removed.delta).toBe(101 - 116)
+  })
+  it('幽灵预览与真实选择后的预测完全一致', () => {
+    const { state, data } = fixture()
+    const current = projectSelection(state, data, [])!
+    const card = state.cards.find((entry) => entry.traitId === 'burrow')!
+    const ghost = previewForHover(state, data, current, card.id)!
+    const committed = act(state, { type: 'toggle-card', cardId: card.id }, data)
+    expect(ghost.result).toEqual(previewGeneration(committed, data))
+  })
+  it('超额卡牌也能预览潜力，无卡或手牌外返回空', () => {
+    const { state, data } = fixture(['hunter', 'hunter'])
+    const selected = selectTraits(state, ['hunter'], data)
+    const current = projectSelection(selected, data, selected.selectedCardIds)!
+    const other = selected.hand.find((id) => !selected.selectedCardIds.includes(id))!
+    expect(expressionCost(selected, [...selected.selectedCardIds, other], data)).toBeGreaterThan(
+      data.rules.expressionBudget,
+    )
+    expect(previewForHover(selected, data, current, other)?.result.populationAfter).toBeGreaterThan(
+      0,
+    )
+    expect(previewForHover(selected, data, current, null)).toBeNull()
+    expect(previewForHover(selected, data, current, 'missing-card')).toBeNull()
+  })
+})
+
 describe('生存预测的拆解', () => {
   it('不做新的适应就是基线，选择性状后逐项解释差异', () => {
     const { state, data } = fixture()

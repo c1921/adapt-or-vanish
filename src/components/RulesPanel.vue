@@ -1,16 +1,29 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { content } from '../game/content'
+
+const props = withDefaults(defineProps<{ variant?: 'light' | 'dark' }>(), { variant: 'light' })
+const dark = computed(() => props.variant === 'dark')
+const wrapperClass = computed(() => (dark.value ? '' : 'panel p-5'))
+const headingClass = computed(() =>
+  dark.value ? 'text-sm font-semibold text-ink' : 'text-sm font-semibold text-slate-800',
+)
+const bodyClass = computed(() =>
+  dark.value
+    ? 'mt-3 space-y-4 text-xs leading-relaxed text-ink-muted'
+    : 'mt-3 space-y-4 text-xs leading-relaxed text-slate-600',
+)
 </script>
 
 <template>
-  <details class="panel p-5">
-    <summary class="cursor-pointer text-sm font-semibold">
+  <component :is="dark ? 'section' : 'details'" :class="wrapperClass">
+    <summary v-if="!dark" class="cursor-pointer text-sm font-semibold">
       <span aria-hidden="true">📖</span>
       规则与计算说明
     </summary>
-    <div class="mt-3 space-y-4 text-xs leading-relaxed text-slate-600">
+    <div :class="bodyClass">
       <section>
-        <h3 class="text-sm font-semibold text-slate-800">每一代的三步</h3>
+        <h3 :class="headingClass">每一代的三步</h3>
         <ol class="mt-1.5 space-y-1">
           <li>1. 环境出题：这一代的环境压力与随机事件决定威胁。</li>
           <li>
@@ -24,7 +37,7 @@ import { content } from '../game/content'
         </ol>
       </section>
       <section>
-        <h3 class="text-sm font-semibold text-slate-800">结算公式</h3>
+        <h3 :class="headingClass">结算公式</h3>
         <p class="mt-1.5">
           出生 = max(0, {{ content.rules.baseBirths }} + 繁殖修正 − 剩余食物压力 ×
           {{ content.rules.foodBirthPenalty }})。 每点食物、温度、捕食压力分别造成
@@ -35,7 +48,7 @@ import { content } from '../game/content'
         </p>
       </section>
       <section>
-        <h3 class="text-sm font-semibold text-slate-800">环境与资源</h3>
+        <h3 :class="headingClass">环境与资源</h3>
         <p class="mt-1.5">
           资源每代刷新，采集量不超过环境可用量，采集总量抵消食物压力。 压力上限
           {{ content.rules.maxPressure }}，资源上限 {{ content.rules.maxResource }}。
@@ -43,7 +56,7 @@ import { content } from '../game/content'
         </p>
       </section>
       <section>
-        <h3 class="text-sm font-semibold text-slate-800">性状与固化</h3>
+        <h3 :class="headingClass">性状与固化</h3>
         <p class="mt-1.5">
           临时性状和永久性状的效果相加；同一组牌的结算与点击顺序无关。
           固化进度按性状类型共享，同一代最多增加一次。 永久性状最多
@@ -52,7 +65,7 @@ import { content } from '../game/content'
         </p>
       </section>
       <section>
-        <h3 class="text-sm font-semibold text-slate-800">进程与存档</h3>
+        <h3 :class="headingClass">进程与存档</h3>
         <p class="mt-1.5">
           每 {{ content.rules.rewardInterval }} 代出现一次演化选择。穿越
           {{ content.environments.map((entry) => entry.name).join(' · ') }} 共
@@ -62,5 +75,5 @@ import { content } from '../game/content'
         </p>
       </section>
     </div>
-  </details>
+  </component>
 </template>

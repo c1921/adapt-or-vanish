@@ -6,9 +6,9 @@ import { content } from '../game/content'
 import {
   pressureDisplay,
   resourceLabels,
-  severityChips,
+  severityChipsOnDark,
   severityIcons,
-  toneChip,
+  toneChipOnDark,
 } from '../game/presentation'
 import type { GenerationResult, PressureId, ResourceId, RunState } from '../game/types'
 
@@ -57,134 +57,125 @@ const rawLines = (row: ThreatRow) =>
 </script>
 
 <template>
-  <section class="panel p-5" aria-label="当前环境">
-    <div class="flex flex-wrap items-start justify-between gap-3">
-      <div>
-        <h2 class="section-title flex items-center gap-1.5">
-          <span aria-hidden="true">🌍</span>当前环境
-        </h2>
-        <p class="mt-1 text-sm text-slate-500">{{ environment.description }}</p>
-      </div>
-      <span :class="toneChip[state.environment.temperature === 'cold' ? 'warmth' : 'cost']">
-        <span aria-hidden="true">{{ state.environment.temperature === 'cold' ? '❄' : '🔥' }}</span>
-        {{ state.environment.temperature === 'cold' ? '寒冷气候' : '高温气候' }}
-      </span>
-    </div>
+  <section aria-label="当前环境">
+    <h2 class="board-title flex items-center gap-1.5">
+      <span aria-hidden="true">🌍</span>当前环境
+    </h2>
+    <p class="mt-1 text-xs leading-relaxed text-ink-muted">{{ environment.description }}</p>
 
-    <p v-if="event" class="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-sm">
-      <span class="font-medium">本代事件：{{ event.name }}</span>
-      <span class="ml-2 text-slate-500">{{ event.description }}</span>
+    <p class="mt-2 rounded-lg border border-white/10 bg-black/25 px-3 py-2 text-xs">
+      <span class="font-medium text-ink">本代事件：{{ event?.name }}</span>
+      <span class="ml-2 text-ink-muted">{{ event?.description }}</span>
     </p>
 
-    <div class="mt-4 grid gap-3 md:grid-cols-3">
+    <div class="mt-3 space-y-2.5">
       <article
         v-for="row in threats"
         :key="row.key"
-        class="flex min-w-0 flex-col rounded-xl border border-slate-200 p-3.5"
+        class="rounded-xl border border-frame-line bg-black/20 p-3"
       >
         <div class="flex flex-wrap items-center gap-2">
-          <span :class="toneChip[row.tone]">
+          <span :class="toneChipOnDark[row.tone]">
             <span aria-hidden="true">{{ row.icon }}</span
             >{{ row.label }}
           </span>
-          <span :class="severityChips[row.level]">
+          <span :class="severityChipsOnDark[row.level]">
             <span aria-hidden="true">{{ severityIcons[row.level] }}</span
             >{{ row.levelLabel }}
           </span>
+          <span class="ml-auto text-xs text-ink-muted">
+            当前损失
+            <span
+              class="font-semibold tabular-nums"
+              :class="row.deaths > 0 ? 'text-rose-300' : 'text-emerald-300'"
+              >{{ row.deaths > 0 ? `−${row.deaths}` : '0' }}</span
+            >
+            个体
+          </span>
         </div>
-        <p class="mt-2.5 text-sm leading-relaxed text-slate-700">{{ row.headline }}</p>
-        <p class="mt-2 text-sm">
-          <span class="text-slate-500">当前损失 </span>
-          <span
-            class="font-semibold tabular-nums"
-            :class="row.deaths > 0 ? 'text-rose-700' : 'text-emerald-700'"
-            >{{ row.deaths > 0 ? `−${row.deaths}` : '0' }}</span
-          >
-          <span class="text-slate-500"> 个体</span>
+        <p class="mt-2 text-sm leading-relaxed text-ink">{{ row.headline }}</p>
+        <p class="mt-1.5 flex flex-wrap items-center gap-2 text-xs">
           <span
             v-if="saved(row) !== 0"
-            class="chip ml-2"
+            class="board-chip"
             :class="
               saved(row) > 0
-                ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-                : 'border-rose-200 bg-rose-50 text-rose-800'
+                ? 'border-emerald-400/40 bg-emerald-400/15 text-emerald-100'
+                : 'border-rose-400/40 bg-rose-400/15 text-rose-100'
             "
             title="与不做新的适应相比"
           >
             <span aria-hidden="true">{{ saved(row) > 0 ? '↑' : '↓' }}</span>
             {{ saved(row) > 0 ? '少损失' : '多损失' }} {{ Math.abs(saved(row)) }} 个体
           </span>
+          <span v-if="row.adaptNote" class="text-emerald-300">{{ row.adaptNote }}</span>
         </p>
-        <p v-if="row.adaptNote" class="mt-1.5 text-xs text-emerald-700">{{ row.adaptNote }}</p>
-        <details class="mt-3 border-t border-slate-100 pt-2 text-xs">
-          <summary class="cursor-pointer text-slate-500">详细环境参数</summary>
-          <ul class="mt-1.5 space-y-1 tabular-nums text-slate-500">
-            <li v-for="line in rawLines(row)" :key="line">{{ line }}</li>
-          </ul>
-        </details>
+        <ul class="mt-2 space-y-0.5 text-[11px] tabular-nums text-ink-dim">
+          <li v-for="line in rawLines(row)" :key="line">{{ line }}</li>
+        </ul>
       </article>
     </div>
 
-    <details class="mt-4 border-t border-slate-100 pt-3 text-xs">
-      <summary class="cursor-pointer text-slate-600">全部压力与资源数值</summary>
-      <div class="mt-3 grid gap-4 sm:grid-cols-2">
-        <table class="w-full text-left text-sm">
+    <details class="mt-3 border-t border-frame-line pt-2 text-xs">
+      <summary class="cursor-pointer text-ink-dim">全部压力与资源数值</summary>
+      <div class="mt-2 space-y-3">
+        <table class="w-full text-left text-xs">
           <caption class="sr-only">
             环境压力及适应后的剩余压力
           </caption>
           <thead>
-            <tr class="text-xs text-slate-500">
-              <th class="pb-2 font-normal">压力</th>
-              <th class="pb-2 text-right font-normal">环境</th>
-              <th class="pb-2 text-right font-normal">适应后剩余</th>
+            <tr class="text-ink-dim">
+              <th class="pb-1 font-normal">压力</th>
+              <th class="pb-1 text-right font-normal">环境</th>
+              <th class="pb-1 text-right font-normal">适应后剩余</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="key in pressures" :key="key" class="border-t border-slate-100">
-              <th class="py-2 font-medium">
+            <tr v-for="key in pressures" :key="key" class="border-t border-frame-line">
+              <th class="py-1.5 font-medium text-ink">
                 {{ pressureDisplay(key, state.environment.temperature) }}
               </th>
-              <td class="py-2 text-right tabular-nums text-slate-500">
+              <td class="py-1.5 text-right tabular-nums text-ink-muted">
                 {{ state.environment.pressures[key] }}
               </td>
               <td
-                class="py-2 text-right font-semibold tabular-nums"
-                :class="result.remainingPressures[key] ? 'text-amber-800' : 'text-emerald-800'"
+                class="py-1.5 text-right font-semibold tabular-nums"
+                :class="result.remainingPressures[key] ? 'text-orange-200' : 'text-emerald-300'"
               >
                 {{ result.remainingPressures[key] }}
               </td>
             </tr>
           </tbody>
         </table>
-        <table class="w-full text-left text-sm">
+        <table class="w-full text-left text-xs">
           <caption class="sr-only">
             本代资源及采集数量
           </caption>
           <thead>
-            <tr class="text-xs text-slate-500">
-              <th class="pb-2 font-normal">资源</th>
-              <th class="pb-2 text-right font-normal">可用</th>
-              <th class="pb-2 text-right font-normal">采集</th>
-              <th class="pb-2 text-right font-normal">剩余</th>
+            <tr class="text-ink-dim">
+              <th class="pb-1 font-normal">资源</th>
+              <th class="pb-1 text-right font-normal">可用</th>
+              <th class="pb-1 text-right font-normal">采集</th>
+              <th class="pb-1 text-right font-normal">剩余</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="key in resources" :key="key" class="border-t border-slate-100">
-              <th class="py-2 font-medium">{{ resourceLabels[key] }}</th>
-              <td class="py-2 text-right tabular-nums text-slate-500">
+            <tr v-for="key in resources" :key="key" class="border-t border-frame-line">
+              <th class="py-1.5 font-medium text-ink">{{ resourceLabels[key] }}</th>
+              <td class="py-1.5 text-right tabular-nums text-ink-muted">
                 {{ state.environment.resources[key] }}
               </td>
-              <td class="py-2 text-right font-medium tabular-nums text-emerald-800">
+              <td class="py-1.5 text-right font-medium tabular-nums text-emerald-300">
                 {{ result.harvestedResources[key] }}
               </td>
-              <td class="py-2 text-right tabular-nums text-slate-500">
+              <td class="py-1.5 text-right tabular-nums text-ink-muted">
                 {{ result.remainingResources[key] }}
               </td>
             </tr>
           </tbody>
         </table>
       </div>
-      <p class="mt-2 leading-relaxed text-slate-500">
+      <p class="mt-2 leading-relaxed text-ink-dim">
         采集总量抵消食物压力（本代共采集 {{ harvestTotal }} 份）；资源每代重新生成，不跨代储存。
         永久性状与本次表达的性状效果相加。
       </p>

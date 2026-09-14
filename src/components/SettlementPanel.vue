@@ -2,8 +2,8 @@
 import { computed } from 'vue'
 import { fixationStatus } from '../game/analysis'
 import { content } from '../game/content'
-import { effectChips } from '../game/presentation'
 import type { EffectContext, EffectChip } from '../game/presentation'
+import { effectChips } from '../game/presentation'
 import type { GameAction, GenerationResult, RunState } from '../game/types'
 
 const props = defineProps<{
@@ -30,68 +30,69 @@ const progress = computed(() => {
 })
 const chipsOf = (traitId: string): EffectChip[] =>
   effectChips(content.traits[traitId]!.permanent.effects, props.context)
+const copies = (traitId: string) =>
+  props.state.cards.filter((card) => card.traitId === traitId).length
 </script>
 
 <template>
-  <section class="panel p-5" aria-label="自然选择与固化">
-    <div class="flex flex-wrap items-start justify-between gap-3">
-      <div>
-        <h2 class="section-title flex items-center gap-1.5">
+  <footer
+    class="shrink-0 border-t border-frame-line bg-board/95 px-3 py-3"
+    aria-label="自然选择与固化"
+  >
+    <div class="flex flex-wrap items-start justify-between gap-2">
+      <div class="min-w-0">
+        <h2 class="board-title flex items-center gap-1.5">
           <span aria-hidden="true">🧬</span>自然选择：让适应成为本能
         </h2>
-        <p class="mt-1 text-sm leading-relaxed text-slate-500">
+        <p class="mt-0.5 text-xs leading-relaxed text-ink-muted">
           本代成功表达的性状累计了一次固化进度。累计
-          {{ content.rules.fixationThreshold }}
-          代，就能把它固定为物种身份的一部分。
+          {{ content.rules.fixationThreshold }} 代，就能把它固定为物种身份的一部分。
         </p>
       </div>
-      <span class="chip border-violet-200 bg-violet-50 text-violet-800">
+      <span class="board-chip border-violet-400/40 bg-violet-400/15 text-violet-100">
         剩余永久槽位 {{ slotsLeft }} / {{ content.rules.permanentLimit }}
       </span>
     </div>
 
-    <ul v-if="progress.length" class="mt-4 space-y-2">
-      <li v-for="entry in progress" :key="entry.traitId" class="flex items-center gap-3 text-sm">
-        <span class="w-20 shrink-0 truncate text-slate-700">{{ entry.name }}</span>
-        <span class="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-200">
+    <ul v-if="progress.length" class="mt-2 flex flex-wrap gap-x-5 gap-y-1">
+      <li v-for="entry in progress" :key="entry.traitId" class="flex items-center gap-2 text-xs">
+        <span class="w-20 shrink-0 truncate text-ink">{{ entry.name }}</span>
+        <span class="h-1.5 w-24 shrink-0 overflow-hidden rounded-full bg-black/40">
           <span
-            class="block h-full rounded-full bg-violet-500 transition-all duration-300"
+            class="block h-full rounded-full bg-violet-400"
             :style="{ width: `${entry.status.ratio * 100}%` }"
           />
         </span>
-        <span class="w-10 shrink-0 text-right text-xs tabular-nums text-slate-500"
+        <span class="shrink-0 tabular-nums text-ink-dim"
           >{{ entry.status.count }} / {{ entry.status.threshold }}</span
         >
-        <span
-          class="shrink-0 text-xs"
-          :class="entry.status.ready ? 'text-violet-800' : 'text-slate-500'"
-        >
+        <span class="shrink-0" :class="entry.status.ready ? 'text-violet-200' : 'text-ink-dim'">
           {{ entry.status.ready ? '可以固化' : entry.status.text }}
         </span>
       </li>
     </ul>
 
-    <div v-if="fixable.length" class="mt-5 grid gap-3 md:grid-cols-3">
+    <div v-if="fixable.length" class="mt-2 flex gap-2 overflow-x-auto pb-1">
       <article
         v-for="traitId in fixable"
         :key="traitId"
-        class="flex flex-col rounded-xl border border-violet-200 bg-violet-50/40 p-4"
+        class="flex w-72 shrink-0 flex-col rounded-xl border border-violet-300/40 bg-violet-500/10 p-3"
       >
-        <p class="text-sm font-semibold text-violet-900">
+        <p class="text-sm font-semibold text-violet-50">
           {{ content.traits[traitId]!.name }} → {{ content.traits[traitId]!.permanent.name }}
         </p>
-        <p class="mt-1 text-xs font-medium text-violet-800">🧬 固化进度已达成，永久生效</p>
-        <div class="mt-2 flex flex-wrap gap-1">
+        <p class="mt-0.5 text-[11px] font-medium text-violet-200">🧬 固化进度已达成，永久生效</p>
+        <div class="mt-1.5 flex flex-wrap gap-1">
           <span
             v-for="chip in chipsOf(traitId)"
             :key="chip.text"
-            class="chip"
+            class="board-chip"
             :class="
               chip.polarity === 'benefit'
-                ? 'border-emerald-200 bg-white text-emerald-800'
+                ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-100'
                 : chip.polarity === 'cost'
-                  ? 'border-orange-200 bg-white text-orange-900'
-                  : 'border-slate-200 bg-white text-slate-500'
+                  ? 'border-orange-400/40 bg-orange-400/10 text-orange-100'
+                  : 'border-white/15 bg-white/5 text-ink-dim'
             "
             ><span aria-hidden="true">{{
               chip.polarity === 'benefit' ? '🟢' : chip.polarity === 'cost' ? '🔴' : '⚪'
@@ -99,13 +100,11 @@ const chipsOf = (traitId: string): EffectChip[] =>
             >{{ chip.text }}</span
           >
         </div>
-        <p class="mt-2 text-xs leading-relaxed text-slate-500">
-          移除全部
-          {{ state.cards.filter((card) => card.traitId === traitId).length }}
-          张同名牌，占用一个永久槽位，收益与代价都会永久保留。
+        <p class="mt-1.5 text-[11px] leading-4 text-ink-dim">
+          移除全部 {{ copies(traitId) }} 张同名牌，占用一个永久槽位，收益与代价都会永久保留。
         </p>
         <button
-          class="btn-secondary mt-3 w-full"
+          class="btn-board-quiet mt-2"
           type="button"
           @click="emit('action', { type: 'fix-trait', traitId })"
         >
@@ -113,7 +112,7 @@ const chipsOf = (traitId: string): EffectChip[] =>
         </button>
       </article>
     </div>
-    <p v-else class="mt-4 rounded-lg bg-slate-50 p-3 text-sm text-slate-500">
+    <p v-else class="mt-2 text-xs text-ink-dim">
       {{
         slotsLeft <= 0
           ? '永久性状已满。此后靠新牌与分支突变应对环境变化。'
@@ -121,12 +120,12 @@ const chipsOf = (traitId: string): EffectChip[] =>
       }}
     </p>
 
-    <div class="mt-5 flex flex-wrap items-center justify-between gap-3">
-      <p class="text-xs text-slate-500">
+    <div class="mt-2.5 flex flex-wrap items-center justify-between gap-2">
+      <p class="text-[11px] text-ink-dim">
         {{ state.permanentTraits.length }} 个永久性状会在下代自动生效，无需再抽到。
       </p>
       <button
-        class="btn-primary w-full sm:w-auto"
+        class="btn-board w-full sm:w-auto"
         type="button"
         @click="emit('action', { type: 'continue' })"
       >
@@ -137,5 +136,5 @@ const chipsOf = (traitId: string): EffectChip[] =>
         }}
       </button>
     </div>
-  </section>
+  </footer>
 </template>

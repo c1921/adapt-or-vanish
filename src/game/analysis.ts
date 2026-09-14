@@ -112,8 +112,44 @@ export function probeTraitImpact(
   return withTrait.populationAfter - without.populationAfter
 }
 
-export type CauseKey = 'births' | PressureId
+/**
+ * Hovering a card previews the board it would produce, without committing it:
+ * an unselected card shows the plan including it, a selected card shows the plan
+ * without it. Prices are ignored, so unaffordable cards still show their worth.
+ */
+export interface HoverPreview {
+  cardId: string
+  traitId: string
+  /** 'add' while the card is outside the plan, 'remove' while it is part of it. */
+  mode: 'add' | 'remove'
+  result: GenerationResult
+  /** Population change relative to the committed plan. */
+  delta: number
+}
 
+export function previewForHover(
+  state: RunState,
+  content: GameContent,
+  current: GenerationResult | null,
+  cardId: string | null,
+): HoverPreview | null {
+  if (!cardId || !current || !state.hand.includes(cardId)) return null
+  const card = state.cards.find((entry) => entry.id === cardId)
+  if (!card || !content.traits[card.traitId]) return null
+  const selected = state.selectedCardIds.includes(cardId)
+  const others = state.selectedCardIds.filter((id) => id !== cardId)
+  const result = projectSelection(state, content, selected ? others : [...others, cardId])
+  if (!result) return null
+  return {
+    cardId,
+    traitId: card.traitId,
+    mode: selected ? 'remove' : 'add',
+    result,
+    delta: result.populationAfter - current.populationAfter,
+  }
+}
+
+export type CauseKey = 'births' | PressureId
 export interface CauseRow {
   key: CauseKey
   label: string
