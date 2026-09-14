@@ -1,0 +1,31 @@
+{
+  "name": "adapt-or-vanish",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc -b && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "format": "prettier --write src tests docs README.md index.html *.config.ts",
+    "format:check": "prettier --check src tests docs README.md index.html *.config.ts"
+  },
+  "dependencies": {
+    "vue": "^3.5.42",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^24.13.3",
+    "@vitejs/plugin-vue": "^6.0.8",
+    "@vue/tsconfig": "^0.9.1",
+    "prettier": "^3.9.6",
+    "tailwindcss": "^4.3.3",
+    "typescript": "~6.0.2",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.0",
+    "vue-tsc": "^3.3.11"
+  }
+}
