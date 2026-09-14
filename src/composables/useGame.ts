@@ -9,8 +9,10 @@ import {
 } from '../game/engine'
 import type { GameAction, RunState } from '../game/types'
 import { loadRun, saveRun, type StoragePort } from '../persistence/save'
+import { createActionGate } from '../game/ui'
 
 export function useGame() {
+  const gate = createActionGate()
   const errors = validateContent(content)
   if (errors.length) throw new Error(errors.join('\n'))
   let storage: StoragePort | null = null
@@ -35,6 +37,7 @@ export function useGame() {
     if (storage && state.value) notice.value = saveRun(storage, state.value, content)
   }
   function start(seed: string) {
+    gate.reset()
     const randomSeed = `EV-${crypto.getRandomValues(new Uint32Array(1))[0]!.toString(36).toUpperCase()}`
     state.value = createRun(seed || randomSeed, content)
     playing.value = true
@@ -42,7 +45,7 @@ export function useGame() {
     persist()
   }
   function dispatch(action: GameAction) {
-    if (!state.value) return
+    if (!state.value || !gate.accept(action)) return
     const result = reduceGame(state.value, action, content)
     actionError.value = result.error ?? ''
     if (!result.error) {

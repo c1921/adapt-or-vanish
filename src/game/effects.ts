@@ -1,4 +1,17 @@
-import type { Effect, Pressures, Resources, Temperature } from './types'
+import type { Effect, EffectCondition, Pressures, Resources, Temperature } from './types'
+
+export interface EffectContext {
+  temperature: Temperature
+  tags: ReadonlySet<string>
+}
+
+/** Shared by calculation and card explanations; does not evaluate resource caps. */
+export function conditionMatches(condition: EffectCondition | undefined, context: EffectContext) {
+  return (
+    (!condition?.temperature || condition.temperature === context.temperature) &&
+    (!condition?.tags || condition.tags.every((tag) => context.tags.has(tag)))
+  )
+}
 
 export interface EffectTotals {
   pressures: Pressures
@@ -33,8 +46,7 @@ export function sumEffects(
     births: 0,
   }
   for (const effect of effects) {
-    if (effect.when?.temperature && effect.when.temperature !== temperature) continue
-    if (effect.when?.tags?.some((tag) => !tags.has(tag))) continue
+    if (!conditionMatches(effect.when, { temperature, tags })) continue
     // The switch preserves the correlation between each discriminant and payload.
     switch (effect.type) {
       case 'pressure':

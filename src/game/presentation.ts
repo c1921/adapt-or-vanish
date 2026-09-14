@@ -63,3 +63,16 @@ export function describeEffect(effect: Effect): string {
 export function isBenefit(effect: Effect): boolean {
   return effect.type === 'pressure' ? effect.amount < 0 : effect.amount > 0
 }
+
+/** Concise card face wording; full explanations remain available in details. */
+export function describeCompactEffect(effect: Effect): string {
+  const name = effect.type === 'births' ? '出生'
+    : effect.type === 'harvest' ? resourceLabels[effect.target]
+    : effect.target === 'temperature' && effect.when?.temperature
+      ? effect.when.temperature === 'cold' ? '寒冷' : '高温'
+      : pressureLabels[effect.target]
+  const condition = effect.when?.temperature && !(effect.type === 'pressure' && effect.target === 'temperature')
+    ? effect.when.temperature === 'cold' ? ' · 寒冷时' : ' · 高温时' : ''
+  const tags = effect.when?.tags?.map(tag => tagLabels[tag] ?? tag).join('、')
+  return `${name} ${signed(effect.amount)}${condition}${tags ? ` · ${tags}` : ''}`
+}
